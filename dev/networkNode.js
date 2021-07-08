@@ -245,7 +245,6 @@ app.get("/consensus", (req, res) => {
     let maxChainLength = currentChainLength;
     let newLongestChain = null;
     let newPendingTransactions = null;
-    console.log(blockchains);
     blockchains.forEach((blockchain) => {
       if (blockchain.chain.length > maxChainLength) {
         maxChainLength = blochchain.chain.length;
@@ -264,6 +263,28 @@ app.get("/consensus", (req, res) => {
       res.json({ note: "changed", chain: bitcoin.chain });
     }
   });
+});
+
+app.get("/block/:blockHash", (req, res) => {
+  const blockHash = req.params.blockHash;
+  const reqBlock = bitcoin.getBlock(blockHash);
+  res.json(reqBlock);
+});
+
+app.get("/transaction/:transactionId", (req, res) => {
+  const transactionId = req.params.transactionId;
+  const { transaction, block } = bitcoin.getTransaction(transactionId);
+  res.json({ transaction: transaction, block: block });
+});
+
+app.get("/address/:address", (req, res) => {
+  const address = req.params.address;
+  const addressData = bitcoin.getAddress(address);
+  res.json(addressData);
+});
+
+app.get("/block-explorer", (req, res) => {
+  res.sendFile("./block-explorer/index.html", { root: __dirname });
 });
 
 const port = process.argv[2];
