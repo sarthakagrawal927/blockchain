@@ -17,11 +17,15 @@ let bitcoin = new BlockChain();
 const nodeAddress = uuidv4().split("-").join("");
 
 app.get("/", (req, res) => {
-  res.send(bitcoin);
+  res.json(bitcoin);
 });
 
 app.get("/blockchain", (req, res) => {
-  res.send(bitcoin);
+  res.json(bitcoin);
+});
+
+app.post("/blockchain", (req, res) => {
+  res.json(bitcoin);
 });
 
 app.get("/clear", (req, res) => {
@@ -92,7 +96,6 @@ app.post("/receive-new-block", (req, res) => {
   if (correctHash && correctIndex) {
     bitcoin.chain.push(newBlock);
     bitcoin.pendingTransactions = [];
-    console.log(80, newBlock);
     res.json({
       note: `Block has been added accepted`,
       block: newBlock,
@@ -225,12 +228,14 @@ app.post("/register-nodes-bulk", (req, res) => {
 
 app.get("/consensus", (req, res) => {
   let requestPromises = [];
+
   bitcoin.networkNodes.forEach((networkNodeUrl) => {
     requestPromises.push(
-      fetch(networkNodeUrl, {
+      fetch(networkNodeUrl + "/bitcoin", {
         method: "GET",
         headers: {
           Accept: "application/json",
+          "Content-Type": "application/json",
         },
       }),
     );
@@ -238,10 +243,26 @@ app.get("/consensus", (req, res) => {
   Promise.all(requestPromises).then((blockchains) => {
     const currentChainLength = bitcoin.chain.length;
     let maxChainLength = currentChainLength;
-    let longestChain = null,
-      newPendingTransactions = null;
-
-    blockchains.forEach((blockchain) => {});
+    let newLongestChain = null;
+    let newPendingTransactions = null;
+    console.log(blockchains);
+    blockchains.forEach((blockchain) => {
+      if (blockchain.chain.length > maxChainLength) {
+        maxChainLength = blochchain.chain.length;
+        newLongestChain = blockchain.chain;
+        newPendingTransactions = blockchain.pendingTransactions;
+      }
+    });
+    if (
+      !newLongestChain ||
+      (newLongestChain && !bitcoin.chainIsValid(newLongestChain))
+    ) {
+      res.json({ note: "no need to change", chain: bitcoin.chain });
+    } else if (newLongestChain && bitcoin.chainIsValid(newLongestChain)) {
+      bitcoin.chain = newLongestChain;
+      bitcoin.pendingTransactions = newPendingTransactions;
+      res.json({ note: "changed", chain: bitcoin.chain });
+    }
   });
 });
 
