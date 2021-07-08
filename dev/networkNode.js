@@ -7,7 +7,11 @@ const BlockChain = require("./blockchain");
 const fetch = require("node-fetch");
 
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(
+  bodyParser.urlencoded({
+    extended: false,
+  }),
+);
 
 let bitcoin = new BlockChain();
 const nodeAddress = uuidv4().split("-").join("");
@@ -51,7 +55,9 @@ app.get("/mine", (req, res) => {
       fetch(networkNodeUrl + "/receive-new-block", {
         method: "POST",
         body: JSON.stringify(newBlock),
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
       }),
     );
   });
@@ -64,9 +70,14 @@ app.get("/mine", (req, res) => {
         sender: "00",
         recipient: nodeAddress,
       }),
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
     }).then((data) => {
-      res.json({ note: `Block has been added to all`, block: newBlock });
+      res.json({
+        note: `Block has been added to all`,
+        block: newBlock,
+      });
     });
   });
 });
@@ -82,9 +93,15 @@ app.post("/receive-new-block", (req, res) => {
     bitcoin.chain.push(newBlock);
     bitcoin.pendingTransactions = [];
     console.log(80, newBlock);
-    res.json({ note: `Block has been added accepted`, block: newBlock });
+    res.json({
+      note: `Block has been added accepted`,
+      block: newBlock,
+    });
   } else {
-    res.json({ note: `new block rejected`, block: newBlock });
+    res.json({
+      note: `new block rejected`,
+      block: newBlock,
+    });
   }
 });
 
@@ -93,7 +110,9 @@ app.post("/receive-new-block", (req, res) => {
 app.post("/transaction", (req, res) => {
   const newTransaction = req.body;
   const blockIdx = bitcoin.addTransactionToPendingTransactiions(newTransaction);
-  res.json({ note: `Transaction will be added in ${blockIdx}` });
+  res.json({
+    note: `Transaction will be added in ${blockIdx}`,
+  });
 });
 
 // adding transaction to all nodes
@@ -112,13 +131,17 @@ app.post("/transaction/broadcast", (req, res) => {
       fetch(networkNodeUrl + "/transaction", {
         method: "POST",
         body: JSON.stringify(newTransaction),
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
       }),
     );
   });
 
   Promise.all(addTransactionPromises).then((data) => {
-    res.json({ note: `Transaction has been added to all` });
+    res.json({
+      note: `Transaction has been added to all`,
+    });
   });
 });
 
@@ -136,8 +159,12 @@ app.post("/register-and-broadcast-node", (req, res) => {
     regNodePromises.push(
       fetch(networkNodeUrl + "/register-node", {
         method: "POST",
-        body: JSON.stringify({ newNodeUrl: newNodeUrl }),
-        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          newNodeUrl: newNodeUrl,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
       }),
     );
   });
@@ -149,11 +176,15 @@ app.post("/register-and-broadcast-node", (req, res) => {
         body: JSON.stringify({
           allNetworkNodes: [...bitcoin.networkNodes, bitcoin.currentNodeUrl],
         }),
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
     })
     .then((data) => {
-      res.json({ note: "New node registered successfullly" });
+      res.json({
+        note: "New node registered successfullly",
+      });
     });
 });
 
@@ -168,7 +199,9 @@ app.post("/register-node", (req, res) => {
     // new node url does not exist and it is not equal to currentNode
     bitcoin.networkNodes.push(newNodeUrl);
 
-  res.json({ note: "new node registered successfully with node" });
+  res.json({
+    note: "new node registered successfully with node",
+  });
 });
 
 // register nodes in bulk
@@ -185,7 +218,31 @@ app.post("/register-nodes-bulk", (req, res) => {
       bitcoin.networkNodes.push(networkNodeUrl);
   });
 
-  res.json({ note: "bulk registration success" });
+  res.json({
+    note: "bulk registration success",
+  });
+});
+
+app.get("/consensus", (req, res) => {
+  let requestPromises = [];
+  bitcoin.networkNodes.forEach((networkNodeUrl) => {
+    requestPromises.push(
+      fetch(networkNodeUrl, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      }),
+    );
+  });
+  Promise.all(requestPromises).then((blockchains) => {
+    const currentChainLength = bitcoin.chain.length;
+    let maxChainLength = currentChainLength;
+    let longestChain = null,
+      newPendingTransactions = null;
+
+    blockchains.forEach((blockchain) => {});
+  });
 });
 
 const port = process.argv[2];
